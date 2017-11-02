@@ -1,0 +1,36 @@
+<Service
+    UrlProvider="MetadataUrlProvider"
+    Encoder="QSHttpBodyJsonEncoder"
+    Decoder="QSHttpBodyJsonDecoder">
+
+    <Urls>
+        
+        <Url Name="host">http:</Url>
+
+    </Urls>
+    
+    <Defaults
+    IsExclusive="true"
+    Method="POST"
+    Message="努力加载中..."
+    ShowWaitBox="true"
+    ShowError="true"
+    Timeout="20"
+    TimeoutMessage="数据加载失败,请检查当前网络状况..."
+    FallbackMessage="数据加载失败,请检查当前网络状况..." />
+    
+    <ServiceMethods>
+        
+         <!--测试-->
+         <ServiceMethod
+        Method="POST"
+        Timeout="20"
+        UrlPath="appmobile"
+        UrlDomain="index.php?act=member_cart&op=cart_list"
+        Url="host"
+        ReturnType="QZShopCartResultModel"/>
+        
+        
+</ServiceMethods>
+
+</Service>

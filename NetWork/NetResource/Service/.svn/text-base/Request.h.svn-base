@@ -1,0 +1,18 @@
+//
+//  Request.h
+//  ServiceDemo
+//
+//  Created by qizhijian on 15/4/14.
+//  Copyright (c) 2015年 qizhijian. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@interface Request : NSObject
+
++ (instancetype)sharedClient;
+
+- (void)requestWithName:(NSString *)urlName withParameters:(NSMutableDictionary *)dict successCallBack:(void(^)(id))successCallback failCallback:(void(^)(NSString *))failCallback;
+- (void)downLoadFileWithURL:(NSString *)url successCallBack:(void(^)(id))successCallback failCallback:(void(^)(NSString *))failCallback;
+
+@end

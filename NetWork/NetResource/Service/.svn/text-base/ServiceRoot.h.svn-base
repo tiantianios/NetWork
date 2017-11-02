@@ -1,0 +1,17 @@
+//
+//  ServiceRoot.h
+//  ServiceDemo
+//
+//  Created by qizhijian on 15/4/14.
+//  Copyright (c) 2015年 qizhijian. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "ServiceMethod.h"
+
+@interface ServiceRoot : NSObject
+
++ (ServiceMethod *)findMethod:(NSString *)methodName;
++ (NSString *)getHostURLWithName:(NSString *)name;
+
+@end

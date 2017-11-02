@@ -1,0 +1,101 @@
+//
+//  Request.m
+//  ServiceDemo
+//
+//  Created by qizhijian on 15/4/14.
+//  Copyright (c) 2015年 qizhijian. All rights reserved.
+//
+
+#import "Request.h"
+#import "ServiceRoot.h"
+#import "AFHTTPSessionManager.h"
+#import "ServiceMethod.h"
+#import "NSDictionary+HBJSONString.h"
+#import "JSONModel.h"
+#import "AESCrypt.h"
+#import "NSString+MD5.h"
+
+static AFHTTPSessionManager *manager = nil;
+
+@implementation Request
+
++(instancetype)sharedClient
+{
+    static Request *r = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        r = [[Request alloc] init];
+    });
+    
+    return r;
+}
+
+- (id)init
+{
+    self = [super init];
+    if (self)
+    {
+        manager = [AFHTTPSessionManager manager];
+        AFHTTPRequestSerializer *serializer = [AFHTTPRequestSerializer serializer];
+        serializer.timeoutInterval = 20;
+        manager.requestSerializer = serializer;
+        manager.responseSerializer.acceptableContentTypes = [NSSet setWithObject:@"text/html"];
+    }
+    return self;
+}
+
+- (void)requestWithName:(NSString *)urlName withParameters:(NSMutableDictionary *)dict successCallBack:(void(^)(id))successCallback failCallback:(void(^)(NSString *))failCallback
+{
+    ServiceMethod *method = [ServiceRoot findMethod:urlName];
+    
+    manager.requestSerializer.timeoutInterval = method.timeout;
+    
+    if ([method.method isEqualToString:@"GET"])
+    {
+        [manager GET:method.url parameters:dict success:^(NSURLSessionDataTask *task, id responseObject) {
+            
+        } failure:^(NSURLSessionDataTask *task, NSError *error) {
+            
+        }];
+    }
+    else if ([method.method isEqualToString:@"POST"])
+    {
+        NSMutableDictionary *parameters = [self creatPostParametersWithArray:dict andServiceMethod:method];
+        [manager POST:method.url parameters:parameters success:^(NSURLSessionDataTask *task, id responseObject) {
+
+            Class cla = NSClassFromString(method.returnType);
+            id object = [(JSONModel *)[cla alloc] initWithDictionary:responseObject error:nil];
+            successCallback(object);
+            
+        } failure:^(NSURLSessionDataTask *task, NSError *error) {
+            
+            failCallback([NSString stringWithFormat:@"%@",error]);
+            
+        }];
+    }
+}
+
+- (NSMutableDictionary *)creatPostParametersWithArray:(NSMutableDictionary *)dict andServiceMethod:(ServiceMethod *)method
+{
+    NSString *jsonString = dict ? [dict hbJsonStringWithPrettyPrint:YES] : @"{}";
+    NSString *encodingString = [AESCrypt encrypt:jsonString password:kAESEncodingKey];
+    NSMutableDictionary *apiParam = [[NSMutableDictionary alloc] initWithObjectsAndKeys:encodingString,@"api_input",@"",@"api_target",kAPI_KEY,@"api_key",[encodingString md5],@"api_auth",[UserInfo sharedInstance].userToken,@"userToken",[UserInfo sharedInstance].userID,@"userID",@"2",@"platform",[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"],@"version",[UserInfo sharedInstance].userType,@"userType",nil];
+    return apiParam;
+}
+
+- (void)downLoadFileWithURL:(NSString *)url successCallBack:(void(^)(id))successCallback failCallback:(void(^)(NSString *))failCallback
+{
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:url]];
+    NSURLSessionDownloadTask *downloadTask = [manager downloadTaskWithRequest:request progress:nil destination:^NSURL *(NSURL *targetPath, NSURLResponse *response) {
+        
+        NSURL *downloadURL = [[NSFileManager defaultManager] URLForDirectory:NSDocumentDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:NO error:nil];
+        return [downloadURL URLByAppendingPathComponent:[response suggestedFilename]];
+        
+    } completionHandler:^(NSURLResponse *response, NSURL *filePath, NSError *error) {
+        if (error) failCallback(error.description);
+        successCallback(filePath.relativePath);
+    }];
+    [downloadTask resume];
+}
+
+@end
